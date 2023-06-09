@@ -4,6 +4,7 @@
 # import asyncio
 import asyncio
 from datetime import date
+from datetime import datetime
 import http
 import time
 from typing import Union
@@ -20,6 +21,8 @@ import pydantic
 import regex
 import pandas as pd
 from bson import ObjectId
+from supabase import create_client, Client
+
 pydantic.json.ENCODERS_BY_TYPE[ObjectId]=str
 
 
@@ -158,103 +161,103 @@ async def delete_todo(title):
 
 #open ai api SECOND FUNCTION
 
-@app.post("/api/article/OpenAI_custom", tags=["Article"])
-async def post_article_custom(category: str, start_date: date):
+# @app.post("/api/article/OpenAI_custom", tags=["Article"])
+# async def post_article_custom(category: str, start_date: date):
        
 
-    try:
-        config = await fetch_config()
+#     try:
+#         config = await fetch_config()
 
-        #Get date range and iterate
-        articleList = []
+#         #Get date range and iterate
+#         articleList = []
         
-        #OG
-        phrase = config.get_headlines_phrase.replace("REPLACE_CATEGORY", category)
-        phrase = phrase.replace("REPLACE_HEADLINE_COUNT", str(config.headlines_per_category_count))
-        #1978-01-21
-        phrase = phrase.replace("REPLACE_DATE", str(start_date.strftime("%B %d, %Y")))
-        print(phrase)
+#         #OG
+#         phrase = config.get_headlines_phrase.replace("REPLACE_CATEGORY", category)
+#         phrase = phrase.replace("REPLACE_HEADLINE_COUNT", str(config.headlines_per_category_count))
+#         #1978-01-21
+#         phrase = phrase.replace("REPLACE_DATE", str(start_date.strftime("%B %d, %Y")))
+#         print(phrase)
 
-        openai.api_key = OPENAI_API_KEY
+#         openai.api_key = OPENAI_API_KEY
         
-        # list models
-        models = openai.Model.list()
+#         # list models
+#         models = openai.Model.list()
 
-        # print the first model's id
-        print(models.data[0].id)
+#         # print the first model's id
+#         print(models.data[0].id)
 
-        rawHeadlines = ""
-        number = 0
+#         rawHeadlines = ""
+#         number = 0
         
-        # create a chat completion
-        print("*openai.ChatCompletion.create*")
-        chat_completion = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=[{"role": "user", "content": phrase}])
-        # print the chat completion
-        print("print the chat completion: ")
-        print(chat_completion.choices[0].message.content)
-        rawHeadlines = chat_completion.choices[0].message.content
+#         # create a chat completion
+#         print("*openai.ChatCompletion.create*")
+#         chat_completion = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=[{"role": "user", "content": phrase}])
+#         # print the chat completion
+#         print("print the chat completion: ")
+#         print(chat_completion.choices[0].message.content)
+#         rawHeadlines = chat_completion.choices[0].message.content
 
-        # ### uhhh
+#         # ### uhhh
             
-        print("rawHeadlines is: " + rawHeadlines)
-        startIndex = str(rawHeadlines).index('1.')
-        OpenAiMessage = rawHeadlines[0:startIndex]
-        print("OpenAiMessage is: " + OpenAiMessage)
-        headlines_String = rawHeadlines[startIndex-1:len(rawHeadlines)]
-        print("headlines_String is: " + headlines_String)
-        # print("index is: " + str(startIndex))
+#         print("rawHeadlines is: " + rawHeadlines)
+#         startIndex = str(rawHeadlines).index('1.')
+#         OpenAiMessage = rawHeadlines[0:startIndex]
+#         print("OpenAiMessage is: " + OpenAiMessage)
+#         headlines_String = rawHeadlines[startIndex-1:len(rawHeadlines)]
+#         print("headlines_String is: " + headlines_String)
+#         # print("index is: " + str(startIndex))
         
-        #FIXME split the headlines by numbers list 1. 2. 3. ...
-        # headlines = regex.split("\d+(?:\.\d+)*[\s\S]*?\w+\.", headlines_String)
-        headline_list =  regex.split("\d+\.", str(headlines_String))
-        print("test test test")
-        print("headline_list: ")
-        print(headline_list)
+#         #FIXME split the headlines by numbers list 1. 2. 3. ...
+#         # headlines = regex.split("\d+(?:\.\d+)*[\s\S]*?\w+\.", headlines_String)
+#         headline_list =  regex.split("\d+\.", str(headlines_String))
+#         print("test test test")
+#         print("headline_list: ")
+#         print(headline_list)
 
 
-        # CUSTOM HEADLINES TEST
-        # headline_list = {"red sparrow", "blue bird"}
+#         # CUSTOM HEADLINES TEST
+#         # headline_list = {"red sparrow", "blue bird"}
 
-        # creating list
-        list = []
-        today = date.today()
+#         # creating list
+#         list = []
+#         today = date.today()
 
-        #for every single headline in the list, create headlines
-        for headline in headline_list:
-            print("foreach headline isCUSTOM: " + headline)
+#         #for every single headline in the list, create headlines
+#         for headline in headline_list:
+#             print("foreach headline isCUSTOM: " + headline)
             
-            d1 = today.strftime("%d/%m/%Y")
+#             d1 = today.strftime("%d/%m/%Y")
 
-            #TODO RETRY 5 TIMES UNTIL ARTICLE IS NOT EMPTY
-            essay = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=[{"role": "user", "content": "Write a " + str(config.article_body_character_limit) + " character essay about the topic of" + headline}])
+#             #TODO RETRY 5 TIMES UNTIL ARTICLE IS NOT EMPTY
+#             essay = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=[{"role": "user", "content": "Write a " + str(config.article_body_character_limit) + " character essay about the topic of" + headline}])
             
-            article = Article(title=headline, body=essay.choices[0].message.content, datecreated=date.today().strftime("%Y-%m-%d"), dayOfTheYear=start_date.strftime("%Y-%m-%d"), Category=category)
+#             article = Article(title=headline, body=essay.choices[0].message.content, datecreated=date.today().strftime("%Y-%m-%d"), dayOfTheYear=start_date.strftime("%Y-%m-%d"), Category=category)
             
-            try:
+#             try:
                 
-                # doc = vars(article)
-                #add to mongo
-                result = await create_article(article.dict())
-                #FIXME RETURNS JUST FOR ONE ARTICLE / ONE DAY / do for every day in date range
-                # return result
+#                 # doc = vars(article)
+#                 #add to mongo
+#                 result = await create_article(article.dict())
+#                 #FIXME RETURNS JUST FOR ONE ARTICLE / ONE DAY / do for every day in date range
+#                 # return result
         
-            except Exception as error:
+#             except Exception as error:
             
-                return ('An exception occurred: {}'.format(error))
-            # appending instances to list
-            # list.append(Article(title=headline, body=essay.choices[0].message.content, date=date.today()))
-            articleList.append(Article(title=headline, body=essay.choices[0].message.content, date=date.today()))
+#                 return ('An exception occurred: {}'.format(error))
+#             # appending instances to list
+#             # list.append(Article(title=headline, body=essay.choices[0].message.content, date=date.today()))
+#             articleList.append(Article(title=headline, body=essay.choices[0].message.content, date=date.today()))
 
-            # if list:
-            #     return list
-            # raise HTTPException(400, "Something went wrong")
+#             # if list:
+#             #     return list
+#             # raise HTTPException(400, "Something went wrong")
             
-        if articleList:
-                return articleList
-        raise HTTPException(400, "Something went wrong")
+#         if articleList:
+#                 return articleList
+#         raise HTTPException(400, "Something went wrong")
     
-    except Exception as error:
-        return ('An exception occurred: {}'.format(error))
+#     except Exception as error:
+#         return ('An exception occurred: {}'.format(error))
 
 
 ##open ai api
@@ -269,20 +272,24 @@ async def post_article(start_date: date, end_date: date):
         #Get date range and iterate
         daterange = pd.date_range(str(start_date), end_date)
         articleList = []
-        #creating articles between a date range vs a single day
-        for single_date in daterange:
+        
+        day_of_month = start_date
+        time_periods_list = config.time_periods
+
+        #old for loop (for single_date in daterange)
+        #new should be for all the date ranges in the config.time_periods
+        for time_period in time_periods_list:
 
             #TODO refactor each_category
             #creating articles for every single category in the config file
             #**********************************************************************
             #run using async
-            run_each_category = each_category(single_date)
+            run_each_category = each_category(day_of_month, time_period)
             # asyncio.run(run_create_articles)
             articleList += await run_each_category
             #**********************************************************************
 
             
-            # return articleList
         if articleList:
                 return articleList
         raise HTTPException(400, "Something went wrong")
@@ -290,8 +297,7 @@ async def post_article(start_date: date, end_date: date):
     except Exception as error:
         return ('An exception occurred: {}'.format(error))
 
-
-async def each_category( single_date: date):
+async def each_category( day_of_month: date, time_period: str):
     articleList = []
     #
     try:
@@ -305,7 +311,9 @@ async def each_category( single_date: date):
                 phrase = config.get_headlines_phrase.replace("REPLACE_CATEGORY", category)
                 phrase = phrase.replace("REPLACE_HEADLINE_COUNT", str(config.headlines_per_category_count))
                 #1978-01-21
-                phrase = phrase.replace("REPLACE_DATE", str(single_date.strftime("%B %d, %Y")))
+                phrase = phrase.replace("REPLACE_DATE", str(day_of_month.strftime("%B %d")))
+                # phrase should just be a date without a year - 01/01 / xxxx
+                phrase = phrase.replace("REPLACE_YEAR", time_period)
                 print(phrase)
 
                 openai.api_key = OPENAI_API_KEY
@@ -367,7 +375,10 @@ async def each_category( single_date: date):
                     #TODO refacted "create_articles"... 
                     #**********************************************************************
                     category_string = str(category)
-                    single_date_string = single_date.strftime("%Y-%m-%d")
+                    # single_date_string = day_of_month.strftime("%Y-%m-%d")
+                    single_date_string = day_of_month.strftime("%m-%d")
+
+                    time.sleep(config.open_ai_request_sleep_mls)
                     #run using async
                     run_create_articles = create_articles_from_headlineList(headline_list, single_date_string, category_string)
                     # asyncio.run(run_create_articles)
@@ -395,8 +406,11 @@ async def create_articles_from_headlineList(headlines_list: list, single_date: s
 
                 print("foreach headline is (CREATE): " + headline)
                 
-                d1 = today.strftime("%d/%m/%Y")
-
+                #d1 = today.strftime("%d/%m/%Y")
+                # datetime object containing current date and time
+                now = datetime.now()
+                print("Date Now is : " + now.strftime("%Y-%m-%d, %H:%M:%S"))
+                
                 #TODO RETRY 5 TIMES UNTIL ARTICLE IS NOT EMPTY
                 essay = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=[{"role": "user", "content": "Write a " + str(config.article_body_character_limit) + "minimum word essay about the topic of" + headline}])
                 # print("essay: " + str(essay.choices[0].message.content))
@@ -404,23 +418,26 @@ async def create_articles_from_headlineList(headlines_list: list, single_date: s
                 hasArticle=False
 
                 if essay.choices[0].message.content !="":
-                    while hasArticle==False & articleRetryCount < config.headline_retry_count:
-                        time.sleep(config.open_ai_request_sleep_mls)
+                    while hasArticle==False & articleRetryCount < config.headline_retry_count:                        
 
-                        article = Article(title=headline, body=essay.choices[0].message.content, datecreated=date.today().strftime("%Y-%m-%d"), dayOfTheYear=single_date, Category=category_string, readcount=0)
+                        article = Article(title=headline, body=essay.choices[0].message.content, datecreated=now.strftime("%Y-%m-%d, %H:%M:%S"), dayOfTheYear=single_date, Category=category_string, readcount=0)
                         articleRetryCount+1
                         if essay.choices[0].message.content!="":
                             hasArticle=True
                             print("article: " + str(article.body))
                             try:
-                                
+
+                                #get article image
+                                #todo
+
+
                                 # doc = vars(article)
                                 #add to mongo
                                 result = await create_article(article.dict())
                                 #FIXME RETURNS JUST FOR ONE ARTICLE / ONE DAY / do for every day in date range
                                 # return result
                                 articleCounter+=1
-                                print("FINISHED ARTICLE #" + str(articleCounter) + " FOR CATEGORY: ::::::::::::::::::::::::" + category_string)
+                                print("FINISHED ARTICLE #" + str(articleCounter) + " FOR CATEGORY: ::::::::::::::::::::::::" + category_string + "::: For date: " + single_date + " Published on " + now.strftime("%Y-%m-%d, %H:%M:%S"))
                             except Exception as error:
                                 return ('An exception occurred: {}'.format(error))
                             # appending instances to list
@@ -431,6 +448,28 @@ async def create_articles_from_headlineList(headlines_list: list, single_date: s
     except Exception as error:
         return ('An exception occurred: {} in create_articles_from_headlineList'.format(error))
     return articlesList
+
+async def create_image(headline: str, img_size: str):
+
+    url = ""
+    key = ""
+
+    supabase: Client = create_client(url, key)
+
+    image_url = ""
+
+    #get image from DALL-E
+    response = openai.Image.create(
+    prompt=headline,
+    n=1,
+    size=img_size
+    )
+    openai_image_url = response['data'][0]['url']
+
+    #STORE IMAGE TO SERVER OR DB AND GET IMAGE ID
+    #todo
+
+    return image_url 
 
 #######################  get / post for article###########################################################################
 @app.get("/api/article", tags=["Article"])
@@ -470,69 +509,3 @@ async def delete_article(title):
 #####################################################################################################
 
 
-
-
-
-
-
-
-
-
-
-
-#azure
-# async def send_single_message(sender):
-#     # Create a Service Bus message and send it to the queue
-#     message = ServiceBusMessage("Single Message")
-#     await sender.send_messages(message)
-#     print("Sent a single message")
-
-# async def send_a_list_of_messages(sender):
-#     # Create a list of messages and send it to the queue
-#     messages = [ServiceBusMessage("Message in list") for _ in range(5)]
-#     await sender.send_messages(messages)
-#     print("Sent a list of 5 messages")
-
-# async def send_batch_message(sender):
-#     # Create a batch of messages
-#     async with sender:
-#         batch_message = await sender.create_message_batch()
-#         for _ in range(10):
-#             try:
-#                 # Add a message to the batch
-#                 batch_message.add_message(ServiceBusMessage("Message inside a ServiceBusMessageBatch"))
-#             except ValueError:
-#                 # ServiceBusMessageBatch object reaches max_size.
-#                 # New ServiceBusMessageBatch object can be created here to send more data.
-#                 break
-#         # Send the batch of messages to the queue
-#         await sender.send_messages(batch_message)
-#     print("Sent a batch of 10 messages")
-
-# async def run():
-#     # create a Service Bus client using the credential
-#     async with ServiceBusClient(
-#         fully_qualified_namespace=FULLY_QUALIFIED_NAMESPACE,
-#         credential=credential,
-#         logging_enable=True) as servicebus_client:
-#         # get a Queue Sender object to send messages to the queue
-#         sender = servicebus_client.get_queue_sender(queue_name=HEADLINE_QUEUE_NAME)
-#         async with sender:
-#             # send one message
-#             await send_single_message(sender)
-#             # send a list of messages
-#             #await send_a_list_of_messages(sender)
-#             # send a batch of messages
-#             #await send_batch_message(sender)
-
-#         # Close credential when no longer needed.
-#         await credential.close()
-# define a custom coroutine
-
- 
-# asyncio.run(run())
-# print("Done sending messages")
-# print("-----------------------")
-
-
-    
