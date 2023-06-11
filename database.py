@@ -1,17 +1,21 @@
 #  @rondevv
 #  FARMSTACK Tutorial - Sunday 13.06.2021
 
-import motor.motor_asyncio
+import asyncio
+from motor.motor_asyncio import AsyncIOMotorClient
 from model import Article, Config, PyObjectId, Todo
 import pydantic
 from bson import ObjectId
+from odmantic import AIOEngine
 
 pydantic.json.ENCODERS_BY_TYPE[ObjectId] = str
 
-
-client = motor.motor_asyncio.AsyncIOMotorClient(
+client = AsyncIOMotorClient(
     "mongodb+srv://ronaldhoxha:W3Odfb3oew61mKBq@cluster0.bzlecay.mongodb.net/?retryWrites=true&w=majority"
 )
+client.get_io_loop = asyncio.get_event_loop
+engine = AIOEngine(client=client)
+
 # databases
 database_todo = client.TodoList
 database_Main = client.HistoryNews
@@ -48,7 +52,7 @@ async def fetch_all_todos():
 
 async def fetch_all_articles():
     articles = []
-    cursor = articleCollection.find({})
+    cursor = articleCollection.find({"image": {"$ne": None, "$ne": ""}})
     async for document in cursor:
         articles.append(Article(**document))
     return articles
