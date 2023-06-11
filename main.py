@@ -8,7 +8,7 @@ from datetime import datetime
 import http
 import time
 from typing import Union
-from fastapi import FastAPI, Body, Depends, HTTPException, Security, status
+from fastapi import FastAPI, Request, Body, Depends, HTTPException, Security, status
 import httpx
 from pydantic import BaseModel
 from fastapi.security import APIKeyHeader, APIKeyQuery
@@ -22,6 +22,9 @@ import regex
 import pandas as pd
 from bson import ObjectId
 from supabase import create_client, Client
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 
 pydantic.json.ENCODERS_BY_TYPE[ObjectId]=str
 
@@ -104,9 +107,11 @@ from database import (
 
 from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
 
 origins = [
-    "http://localhost:3000",
+    "*",
 ]
 
 # what is a middleware? 
@@ -121,43 +126,42 @@ app.add_middleware(
 )
 
 
+@app.get("/", response_class=HTMLResponse)
+async def index(request: Request):
+    return templates.TemplateResponse("index.html", context={"request": request})
 
-@app.get("/")
-async def read_root():
-    return {"Hello": "World"}
+# @app.get("/api/todo")
+# async def get_todo():
+#     response = await fetch_all_todos()
+#     return response
 
-@app.get("/api/todo")
-async def get_todo():
-    response = await fetch_all_todos()
-    return response
+# @app.get("/api/todo/{title}", response_model=Todo)
+# async def get_todo_by_title(title):
+#     response = await fetch_one_todo(title)
+#     if response:
+#         return response
+#     raise HTTPException(404, f"There is no todo with the title {title}")
 
-@app.get("/api/todo/{title}", response_model=Todo)
-async def get_todo_by_title(title):
-    response = await fetch_one_todo(title)
-    if response:
-        return response
-    raise HTTPException(404, f"There is no todo with the title {title}")
+# @app.post("/api/todo/", response_model=Todo)
+# async def post_todo(todo: Todo):
+#     response = await create_todo(todo.dict())
+#     if response:
+#         return response
+#     raise HTTPException(400, "Something went wrong")
 
-@app.post("/api/todo/", response_model=Todo)
-async def post_todo(todo: Todo):
-    response = await create_todo(todo.dict())
-    if response:
-        return response
-    raise HTTPException(400, "Something went wrong")
+# @app.put("/api/todo/{title}/", response_model=Todo)
+# async def put_todo(title: str, desc: str):
+#     response = await update_todo(title, desc)
+#     if response:
+#         return response
+#     raise HTTPException(404, f"There is no todo with the title {title}")
 
-@app.put("/api/todo/{title}/", response_model=Todo)
-async def put_todo(title: str, desc: str):
-    response = await update_todo(title, desc)
-    if response:
-        return response
-    raise HTTPException(404, f"There is no todo with the title {title}")
-
-@app.delete("/api/todo/{title}")
-async def delete_todo(title):
-    response = await remove_todo(title)
-    if response:
-        return "Successfully deleted todo"
-    raise HTTPException(404, f"There is no todo with the title {title}")
+# @app.delete("/api/todo/{title}")
+# async def delete_todo(title):
+#     response = await remove_todo(title)
+#     if response:
+#         return "Successfully deleted todo"
+#     raise HTTPException(404, f"There is no todo with the title {title}")
 
 #open ai api SECOND FUNCTION
 
@@ -261,7 +265,6 @@ async def delete_todo(title):
 
 
 ##open ai api
-
 @app.post("/api/article/OpenAI", tags=["Article"])
 async def post_article(start_date: date, end_date: date):
        
@@ -471,18 +474,17 @@ async def create_image(headline: str, img_size: str):
 
     return image_url 
 
-#######################  get / post for article###########################################################################
 @app.get("/api/article", tags=["Article"])
 async def get_article():
     response = await fetch_all_articles()
     return response
 
-@app.get("/api/article/{title}", response_model=Article, tags=["Article"])
-async def get_article_by_title(title):
-    response = await fetch_one_article(title)
+@app.get("/api/article/{article_id}", response_model=Article, tags=["Article"])
+async def get_article_by_title(article_id):
+    response = await fetch_one_article(article_id)
     if response:
         return response
-    raise HTTPException(404, f"There is no todo with the title {title}")
+    raise HTTPException(404, f"404 Not found")
 
 @app.post("/api/article/", response_model=Article, tags=["Article"])
 async def post_article(article: Article):
