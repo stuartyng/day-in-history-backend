@@ -1,12 +1,13 @@
 #  @rondevv
 #  FARMSTACK Tutorial - Sunday 13.06.2021
-
+import re
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 from model import Article, Config, PyObjectId, Todo
 import pydantic
 from bson import ObjectId
 from odmantic import AIOEngine
+from datetime import datetime
 
 pydantic.json.ENCODERS_BY_TYPE[ObjectId] = str
 
@@ -51,8 +52,15 @@ async def fetch_all_todos():
 
 
 async def fetch_all_articles():
+    now = datetime.now()
+    monthDate = now.strftime("%m-%d")
+    regex_pattern = re.compile(f"{monthDate}$", re.IGNORECASE)
+
     articles = []
-    cursor = articleCollection.find({"image": {"$ne": None, "$ne": ""}})
+    cursor = articleCollection.find(
+        {"image": {"$ne": None, "$ne": ""}, "dayOfTheYear": {"$regex": regex_pattern}}
+    )
+
     async for document in cursor:
         articles.append(Article(**document))
     return articles

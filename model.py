@@ -68,8 +68,9 @@ class Config:
     get_headlines_phrase: str
     write_essay_phrase: str
     article_image_size: str
+    image_bucket_path: str
 
-    def __init__(self, _id: str, headlines_per_category_count: int, headline_retry_count: int, article_body_character_limit: int, open_ai_request_sleep_mls: int, categories: List[str],  time_periods: List[str],period_range: PeriodRange, get_headlines_phrase: str, write_essay_phrase: str, article_image_size: str) -> None:
+    def __init__(self, _id: str, headlines_per_category_count: int, headline_retry_count: int, article_body_character_limit: int, open_ai_request_sleep_mls: int, categories: List[str],  time_periods: List[str],period_range: PeriodRange, get_headlines_phrase: str, write_essay_phrase: str, article_image_size: str, image_bucket_path: str) -> None:
         self._id = _id
         self.headlines_per_category_count = headlines_per_category_count
         self.article_body_character_limit = article_body_character_limit
@@ -81,5 +82,6 @@ class Config:
         self.write_essay_phrase = write_essay_phrase
         self.article_image_size = article_image_size
         self.headline_retry_count = headline_retry_count
+        self.image_bucket_path = image_bucket_path
 
 
